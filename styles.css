@@ -585,7 +585,32 @@ textarea { resize: vertical; min-height: 80px; }
 .lb-head { padding: 12px 0 4px; }
 .fi.lb p b { font-weight: 600; }
 .fi.lb .lb-rank { display: inline-block; min-width: 30px; color: var(--dim); font-variant-numeric: tabular-nums; }
-.fi.lb:nth-child(-n+4) .lb-rank { color: var(--green); }
+/* King of the Hill (Bagworkers tab): old pump.fun navy, the site's own neon crown */
+.koth { display: block; margin: 10px 0 12px; padding: 16px 14px 14px; border-radius: 14px; background: #1b1d28; border: 1px solid #2b2e3d; color: inherit; transition: border-color .2s; }
+.koth:hover { border-color: var(--neon); }
+.koth-title { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 0 14px; font: 700 15px/1 var(--mono); letter-spacing: .18em; text-transform: uppercase; color: var(--neon); text-shadow: 0 0 12px rgba(2, 243, 143, .45); }
+.koth-crown { width: 26px; height: 17px; fill: var(--neon); filter: drop-shadow(0 0 6px rgba(2, 243, 143, .6)); }
+.koth-card { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 14px; align-items: center; }
+.koth-av { position: relative; display: block; width: 96px; height: 96px; }
+.koth-img { display: block; width: 100%; height: 100%; border-radius: 12px; overflow: hidden; background: var(--surface-2); box-shadow: 0 0 0 2px var(--neon), 0 0 22px rgba(2, 243, 143, .3); }
+.koth-img img, .koth-img .fi-ident { width: 100%; height: 100%; object-fit: cover; border-radius: 0; }
+.koth-info p { margin: 0 0 3px; font-size: 13.5px; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.koth-by { color: #a5b4fc; } .koth-by b { font-weight: 600; }
+.koth-num { color: var(--up); font-weight: 600; } .koth-num span { color: var(--dim); font-weight: 400; }
+.koth-lead { color: var(--muted); }
+.koth-name { margin-top: 4px !important; font-size: 17px !important; font-weight: 700; color: #fff; }
+.koth-link { display: inline-block; margin-top: 4px; color: var(--dim); font-size: 12.5px; }
+.koth:hover .koth-link { color: var(--text); }
+.koth-podium { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 6px; }
+.koth-pod { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 12px 8px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); color: inherit; text-align: center; min-width: 0; transition: border-color .2s; }
+.koth-pod:hover { border-color: var(--line-2); }
+.koth-pod-rank { font: 700 12px/1 var(--mono); color: var(--green); margin-bottom: 6px; }
+.koth-pod-av { display: block; width: 52px; height: 52px; border-radius: 50%; overflow: hidden; background: var(--surface-2); margin-bottom: 6px; }
+.koth-pod-av img, .koth-pod-av .fi-ident { width: 100%; height: 100%; object-fit: cover; }
+.koth-pod b, .koth-pod small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.koth-pod b { font-size: 14px; font-weight: 600; } .koth-pod small { color: var(--dim); font-size: 12px; }
+.koth-pod-n { margin-top: 6px; font: 600 11.5px/1 var(--sans); padding: 5px 8px; border-radius: 6px; background: var(--green-soft); color: var(--green); }
+.koth-sub { margin: 14px 0 0; text-align: center; color: var(--dim); font-size: 12.5px; }
 .feed-end .spinner { display: inline-block; }
 .feed-end {padding: 22px 0 6px; text-align: center; color: var(--dim); font-size: 13px; }
 
