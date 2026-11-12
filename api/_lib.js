@@ -20,7 +20,9 @@ async function db(path, { method = "GET", body, prefer } = {}) {
   if (prefer) headers.Prefer = prefer;
   const r = await fetch(env("SUPABASE_URL").replace(/\/$/, "") + "/rest/v1/" + path, { method, headers, body: body ? JSON.stringify(body) : undefined });
   if (!r.ok) throw new Error(`supabase ${r.status}: ${(await r.text()).slice(0, 200)}`);
-  return r.status === 204 ? null : r.json();
+  // Supabase answers 201 with an empty body on inserts (return=minimal): only parse when there is a body
+  const t = await r.text();
+  return t ? JSON.parse(t) : null;
 }
 
 // Same text posted twice by the same account only counts once: compare without case, links, mentions, emoji or punctuation
