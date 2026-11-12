@@ -49,6 +49,7 @@
   <a class="lnav-brand" href="#"><img src="assets/logo.png" alt="">$App</a>
   <nav class="lnav-links" aria-label="Sections">
     <a href="#s-feed" data-step="home">Feed</a>
+    <a href="#s-hill" data-step="hill">Hill</a>
     <a href="#s-market" data-step="market">Market</a>
     <a href="#s-create" data-step="studio">Create</a>
     <a href="#s-kit" data-step="kit">Kit</a>
@@ -72,12 +73,16 @@
 
     <section class="l-step" data-phone="home" id="s-feed">
       <h2>Signatures, all day.</h2>
-      <p>Every post ends the same way. Memes, live buys and milestones, in one timeline of people sending it.</p>
+      <p>The best $App callouts from the Pumpfun app, each one turned into a meme. Remix any of them in one tap.</p>
       <div class="l-sig l-notif" id="sigNotif">
         <img src="assets/logo.png" alt="">
         <span><b>Sent from my Pumpfun App</b><small id="sigNotifMsg">A runner just woke up.</small></span>
         <i id="sigNotifTime">now</i>
       </div>
+    </section>
+    <section class="l-step" data-phone="hill" id="s-hill">
+      <h2>King of the Hill.</h2>
+      <p>Everyone who signs "Sent from my Pumpfun App" on X, ranked since day one. Whoever sends it the most wears the crown.</p>
     </section>
     <section class="l-step" data-phone="market" id="s-market">
       <h2>Live, not screenshots.</h2>
@@ -101,7 +106,7 @@
 
   <div class="l-stage" id="stage">
     <svg class="l-arcs" viewBox="0 0 800 800" aria-hidden="true"><circle cx="400" cy="400" r="250"/><circle cx="400" cy="400" r="330"/><circle cx="400" cy="400" r="410"/></svg>
-    <div class="l-rail" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+    <div class="l-rail" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
     <div class="phone" id="phone">
 <div class="device" id="device" data-lenis-prevent>
 
@@ -206,16 +211,21 @@
             <i>Post</i>
           </button>
 
-          <div class="feed-tabs" id="feedTabs" hidden>
-            <div class="mini" role="group" aria-label="Show">
-              <button type="button" data-feed-tab="all" aria-pressed="true">For you</button>
-              <button type="button" data-feed-tab="callouts" aria-pressed="false">Best callouts</button>
-              <button type="button" data-feed-tab="board" aria-pressed="false" hidden>Bagworkers</button>
-            </div>
+          <div class="feed-head">
+            <h3>They send it from the Pumpfun app</h3>
             <small id="calloutsNote"></small>
           </div>
 
           <div class="feed" id="feed" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <!-- ===== HILL (King of the Hill: who posts "Sent from my Pumpfun App" on X the most) ===== -->
+      <section class="screen" id="scr-hill" data-screen="hill" aria-label="King of the Hill" hidden>
+        <div class="pad">
+          <div class="ltitle"><h2 class="title">Hill</h2></div>
+          <p class="hill-sub">Who signs "Sent from my Pumpfun App" on X the most. From X, updated daily.</p>
+          <div class="feed" id="hill" aria-live="polite"></div>
         </div>
       </section>
 
@@ -631,6 +641,7 @@
     <!-- Bottom tab bar, like the Pump.fun app -->
     <nav class="tabbar" aria-label="Sections">
       <button type="button" data-go="home" aria-label="Feed"><svg viewBox="0 0 24 24"><path d="M3.5 10.5 12 3.5l8.5 7V20a1 1 0 0 1-1 1H15v-6H9v6H4.5a1 1 0 0 1-1-1z"/></svg><span>Feed</span></button>
+      <button type="button" data-go="hill" aria-label="King of the Hill"><svg viewBox="0 0 24 24"><path d="M3.8 17.5 5 7.8l4.4 3.9L12 5.2l2.6 6.5L19 7.8l1.2 9.7z"/><path d="M5 20.5h14"/></svg><span>Hill</span></button>
       <button type="button" data-go="market" aria-label="Market"><svg viewBox="0 0 24 24"><path d="M4 4v16h16"/><path d="m7.5 14.5 3.5-4 3 3 5.5-6"/></svg><span>Market</span></button>
       <button type="button" data-go="studio" aria-label="Create a meme" class="create"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.2"/><path d="M12 8v8M8 12h8"/></svg><span>Create</span></button>
       <button type="button" data-go="kit" aria-label="Profile kit"><svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="3.6"/><path d="M5.5 19.5a7 7 0 0 1 13 0"/><circle cx="12" cy="12" r="9.2"/></svg><span>Kit</span></button>

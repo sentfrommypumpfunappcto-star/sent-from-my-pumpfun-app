@@ -75,7 +75,7 @@
 
   // ---------- Best callouts: the real $App callouts from pump.fun, each one turned into a meme.
   // Live through api/callouts.js; data/callouts.json is the fallback (tools/export-callouts.js refreshes it).
-  let CALLOUTS = [], calloutsAt = 0, tab = "all";
+  let CALLOUTS = [], calloutsAt = 0, calloutsTried = false;
   // only a trailing signature goes: "sent from my pumpfun app at 100M?!!" keeps its joke
   const SIGRX = /\s*[-–—]?\s*sen[dt]?\s+(?:from|to)\s+(?:my|the|his)\s+pump(?:[.\s]?fun)?(?:\s+(?:super\s+)?(?:app|wallet))?[\s.!]*$/i;
   const strip = (s) => (s || "").trim().replace(SIGRX, "").replace(/\s+/g, " ").trim();
@@ -117,9 +117,9 @@
     </article>`;
 
   // ---------- Bagworkers: who posts "Sent from my Pumpfun App" on X the most (api/leaderboard.js).
-  // The tab only shows once the API is set up (X + Supabase keys on Vercel).
-  let board = { period: "week", rows: [], loaded: false };
-  const BOARD_LABEL = { day: "24h", week: "7 days", all: "All time" };
+  // Shown on its own screen, the Hill (#hill), once the API is set up (X + Supabase keys on Vercel).
+  let board = { period: "all", rows: [], loaded: false };
+  const BOARD_LABEL = { all: "All time", week: "7 days", day: "24h" };
   // King of the Hill: #1 gets the throne card, #2 and #3 the podium, everyone else the hill below
   const CROWN = `<svg class="koth-crown" viewBox="0 0 64 40" aria-hidden="true"><path d="M4 34 8 8l14 14L32 2l10 20L56 8l4 26z"/><rect x="4" y="34" width="56" height="5" rx="2"/></svg>`;
   const bAv = (r, cls) => `<span class="${cls}">${r.avatar ? `<img src="${esc(r.avatar)}" alt="" loading="lazy" referrerpolicy="no-referrer" data-w="${esc(r.username)}">` : ident(r.username)}</span>`;
@@ -166,12 +166,16 @@
     board = { period, rows: board.period === period ? board.rows : [], loaded: board.period === period && board.loaded };
     try {
       const j = await (await fetch("/api/leaderboard?period=" + period)).json();
-      if (!j.configured) return false;
-      if (board.period === period) board = { period, rows: j.rows || [], loaded: true };
-    } catch { return false; }
-    if (tab === "board") render();
-    return true;
+      if (board.period === period) board = { period, rows: j.configured ? j.rows || [] : [], loaded: true };
+    } catch { if (board.period === period) board = { period, rows: [], loaded: true }; }
+    renderBoard();
   }
+  const hillEl = $("hill");
+  const renderBoard = () => { hillEl.innerHTML = boardHTML(); };
+  hillEl.addEventListener("click", (e) => {
+    const bp = e.target.closest("[data-board]");
+    if (bp && bp.dataset.board !== board.period) { haptic(); board.period = null; loadBoard(bp.dataset.board); renderBoard(); }
+  });
 
   const feed = $("feed");
   let trades = [], MEDIA = [];
@@ -179,12 +183,13 @@
     MEDIA = [];
     const media = (m) => MEDIA.push(m) - 1;
     let html = "";
-    $("calloutsNote").textContent = tab === "board" ? "From X · updated daily" : calloutsAt ? `From pump.fun · ${ago(calloutsAt)}` : "";
-    if (tab === "board") {
-      feed.innerHTML = boardHTML(); return;
-    } else if (tab === "callouts") {
+    $("calloutsNote").textContent = calloutsAt ? `Best callouts · ${ago(calloutsAt)}` : "";
+    // the feed is the best $App callouts from pump.fun, each one turned into a meme by the Studio
+    if (CALLOUTS.length) {
       CALLOUTS.forEach((c) => { html += calloutHTML(c, media(c.meme)); });
       html += `<p class="feed-end">Ranked by pump.fun. Post yours from the app.</p>`;
+    } else if (!calloutsTried) {
+      html = `<p class="feed-end"><span class="spinner"></span></p>`;
     } else {
       // a callout before every second post, the latest real trades after every second post
       let ti = 0, ci = 0;
@@ -229,28 +234,19 @@
     calloutsSig = sig;
     CALLOUTS = list.map((c) => ({ ...c, meme: calloutMeme(c) }));
     calloutsAt = Date.parse(d.updated) || 0;
-    $("feedTabs").hidden = false;
-    // don't redraw under someone who is reading the leaderboard
-    if (tab !== "board") render();
-  }
-  loadCallouts();
-  setInterval(() => { if (!document.hidden) loadCallouts(); }, 300000);
-  loadBoard("week").then((ok) => {
-    if (!ok) return;
-    $("feedTabs").hidden = false;
-    document.querySelector('[data-feed-tab="board"]').hidden = false;
-  });
-  $("feedTabs").addEventListener("click", (e) => {
-    const b = e.target.closest("[data-feed-tab]"); if (!b || b.dataset.feedTab === tab) return;
-    tab = b.dataset.feedTab; haptic();
-    $$("[data-feed-tab]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
     render();
-  });
-  // a pump.fun avatar that fails to load falls back to the wallet's identicon
-  feed.addEventListener("error", (e) => {
+  }
+  loadCallouts().finally(() => { calloutsTried = true; if (!CALLOUTS.length) render(); });
+  setInterval(() => { if (!document.hidden) loadCallouts(); }, 300000);
+  renderBoard();
+  loadBoard("all");
+  // a pump.fun or X avatar that fails to load falls back to an identicon
+  const avatarFallback = (e) => {
     const img = e.target;
     if (img.tagName === "IMG" && img.dataset.w) img.outerHTML = ident(img.dataset.w);
-  }, true);
+  };
+  feed.addEventListener("error", avatarFallback, true);
+  hillEl.addEventListener("error", avatarFallback, true);
 
   // memes are drawn by the Studio once its fonts are in, then only when scrolled near
   let mediaIO = null;
@@ -272,16 +268,15 @@
   S.on("trades:init", (list) => { trades = list.slice(0, 4); render(); });
   S.on("trade", (t) => {
     trades.unshift(t);
-    const first = tab === "all" && feed.querySelector(".fi");
+    // live trades only show in the fallback timeline, when no callout could be loaded
+    const first = !CALLOUTS.length && feed.querySelector(".fi");
     if (first) first.insertAdjacentHTML("beforebegin", tradeHTML(t, true));
   });
-  S.on("milestone", (label) => { const first = tab === "all" && feed.querySelector(".fi"); if (first) first.insertAdjacentHTML("beforebegin", msHTML(label)); });
+  S.on("milestone", (label) => { const first = !CALLOUTS.length && feed.querySelector(".fi"); if (first) first.insertAdjacentHTML("beforebegin", msHTML(label)); });
   S.on("memes:ready", () => { loadMedia(); buildStories(); });
   setInterval(() => $$("#feed [data-ts]").forEach((el) => { el.textContent = ago(+el.dataset.ts); }), 30000);
 
   feed.addEventListener("click", async (e) => {
-    const bp = e.target.closest("[data-board]");
-    if (bp) { if (bp.dataset.board !== board.period) { haptic(); board.period = null; loadBoard(bp.dataset.board); render(); } return; }
     const like = e.target.closest("[data-like]");
     if (like) {
       const p = POSTS[like.dataset.like], on = like.classList.toggle("liked"); haptic();

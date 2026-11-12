@@ -8,8 +8,8 @@
   // =====================================================================
   // Navigation between screens
   // =====================================================================
-  const SCREENS = ["home", "market", "studio", "kit", "about"];
-  const LEGACY = { token: "market", chart: "market", app: "about", more: "about" }; // old links keep working
+  const SCREENS = ["home", "hill", "market", "studio", "kit", "about"];
+  const LEGACY = { token: "market", chart: "market", app: "about", more: "about", board: "hill", bagworkers: "hill" }; // old links keep working
   let current = null;
   function go(name, { replace = false } = {}) {
     if (!SCREENS.includes(name)) name = "home";
