@@ -120,16 +120,46 @@
   // The tab only shows once the API is set up (X + Supabase keys on Vercel).
   let board = { period: "week", rows: [], loaded: false };
   const BOARD_LABEL = { day: "24h", week: "7 days", all: "All time" };
+  // King of the Hill: #1 gets the throne card, #2 and #3 the podium, everyone else the hill below
+  const CROWN = `<svg class="koth-crown" viewBox="0 0 64 40" aria-hidden="true"><path d="M4 34 8 8l14 14L32 2l10 20L56 8l4 26z"/><rect x="4" y="34" width="56" height="5" rx="2"/></svg>`;
+  const bAv = (r, cls) => `<span class="${cls}">${r.avatar ? `<img src="${esc(r.avatar)}" alt="" loading="lazy" referrerpolicy="no-referrer" data-w="${esc(r.username)}">` : ident(r.username)}</span>`;
+  const xUrl = (r) => `https://x.com/${encodeURIComponent(r.username)}`;
+  const nPosts = (n) => `${n} ${n === 1 ? "post" : "posts"}`;
   function boardHTML() {
-    const rows = board.rows.map((r) => `
-      <a class="fi ev lb" href="https://x.com/${encodeURIComponent(r.username)}" target="_blank" rel="noopener">
-        <span class="fi-av co">${r.avatar ? `<img src="${esc(r.avatar)}" alt="" loading="lazy" referrerpolicy="no-referrer" data-w="${esc(r.username)}">` : ident(r.username)}</span>
-        <div><p><span class="lb-rank">#${r.rank}</span><b>${esc(r.name || r.username)}</b></p><small>@${esc(r.username)}</small></div>
-        <span class="ev-kind ms">${r.count} ${r.count === 1 ? "post" : "posts"}</span>
+    const [king, ...rest] = board.rows;
+    const total = board.rows.reduce((t, r) => t + r.count, 0);
+    const lead = king && rest[0] ? king.count - rest[0].count : 0;
+    const throne = king ? `
+      <a class="koth" href="${xUrl(king)}" target="_blank" rel="noopener">
+        <h3 class="koth-title">${CROWN}<span>King of the Hill</span></h3>
+        <div class="koth-card">
+          <span class="koth-av">${bAv(king, "koth-img")}</span>
+          <div class="koth-info">
+            <p class="koth-by">posted by <b>@${esc(king.username)}</b></p>
+            <p class="koth-num">posts: ${king.count}${total ? ` <span>(${Math.round(king.count / total * 100)}% of the hill)</span>` : ""}</p>
+            <p class="koth-lead">${rest[0] ? `lead: +${lead} on #2` : "alone on the hill"}</p>
+            <p class="koth-name">${esc(king.name || king.username)}</p>
+            <span class="koth-link">[view on X]</span>
+          </div>
+        </div>
+      </a>` : "";
+    const podium = rest.slice(0, 2).map((r) => `
+      <a class="koth-pod" href="${xUrl(r)}" target="_blank" rel="noopener">
+        <span class="koth-pod-rank">#${r.rank}</span>${bAv(r, "koth-pod-av")}
+        <b>${esc(r.name || r.username)}</b><small>@${esc(r.username)}</small><span class="koth-pod-n">${nPosts(r.count)}</span>
       </a>`).join("");
+    const hill = rest.slice(2).map((r) => `
+      <a class="fi ev lb" href="${xUrl(r)}" target="_blank" rel="noopener">
+        ${bAv(r, "fi-av co")}
+        <div><p><span class="lb-rank">#${r.rank}</span><b>${esc(r.name || r.username)}</b></p><small>@${esc(r.username)}</small></div>
+        <span class="ev-kind ms">${nPosts(r.count)}</span>
+      </a>`).join("");
+    const body = !board.loaded ? `<p class="feed-end"><span class="spinner"></span></p>`
+      : king ? `${throne}${podium ? `<div class="koth-podium">${podium}</div>` : ""}${hill ? `<p class="koth-sub">[the hill]</p>${hill}` : ""}`
+      : `<p class="feed-end">Nobody on the hill yet. Post "Sent from my Pumpfun App" on X and take the crown.</p>`;
     return `<div class="lb-head"><div class="mini" role="group" aria-label="Period">${Object.keys(BOARD_LABEL).map((p) =>
       `<button type="button" data-board="${p}" aria-pressed="${p === board.period}">${BOARD_LABEL[p]}</button>`).join("")}</div></div>
-      ${board.loaded ? rows || `<p class="feed-end">Nobody yet. Post "Sent from my Pumpfun App" on X and take #1.</p>` : `<p class="feed-end"><span class="spinner"></span></p>`}
+      ${body}
       <p class="feed-end">Counts X posts that say "Sent from my Pumpfun App". Max 15 a day per account, copies don't count.</p>`;
   }
   async function loadBoard(period) {
