@@ -19,131 +19,110 @@
   button, .bm { display: inline-flex; align-items: center; gap: 8px; margin-top: 14px; padding: 10px 16px; border-radius: 999px; border: 0; background: var(--green); color: #052e16; font: 600 14px var(--sans); cursor: pointer; text-decoration: none; }
   .bm { cursor: grab; }
   button.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
-  ol { margin: 0; padding-left: 20px; } li { margin-bottom: 6px; }
   .status { margin-top: 16px; padding: 14px; border-radius: 12px; background: var(--surface-2); white-space: pre-line; }
   .ok { color: var(--green); } .err { color: var(--red); }
   code { background: var(--surface-2); padding: 1px 6px; border-radius: 6px; font-size: 13px; }
+  a { color: var(--green); }
 </style>
 </head>
 <body>
 <main>
   <h1>Mise à jour des callouts</h1>
-  <p class="dim">Un clic sur pump.fun, et les meilleurs callouts $App arrivent sur le site.</p>
+  <p class="dim">Un clic sur pump.fun, et les meilleurs callouts du jour et de la semaine arrivent dans le Feed.</p>
 
   <div class="status" id="status" hidden></div>
 
   <section class="card">
     <h2>1. Le bouton (une seule fois)</h2>
     <p>Affiche ta barre de favoris (<code>Ctrl+Maj+B</code>, ou <code>Cmd+Maj+B</code> sur Mac), puis <b>glisse ce bouton dedans</b> :</p>
-    <a class="bm" id="bookmarklet" href="#">↻ Callouts $App</a>
+    <a class="bm" id="bookmarklet" href="#">↻ Best callouts</a>
     <p><small>Marche sur Chrome, Brave et Edge.</small></p>
   </section>
 
   <section class="card">
-    <h2>2. La clé GitHub (une seule fois)</h2>
-    <ol>
-      <li>Clique sur <a href="https://github.com/settings/personal-access-tokens/new?name=Callouts+App&description=Mise+a+jour+des+callouts+du+site&expires_in=none&contents=write" target="_blank" rel="noopener" style="color:var(--green)"><b>ce lien</b></a> (connecte-toi à GitHub si on te le demande). Le formulaire est déjà rempli.</li>
-      <li>À <b>Repository access</b>, choisis « Only select repositories » puis le dépôt du site.</li>
-      <li>Clique sur <b>Generate token</b> en bas, copie le code qui commence par <code>github_pat_</code> et colle-le ci-dessous.</li>
-    </ol>
-    <label for="repo">Dépôt (propriétaire/nom)</label>
-    <input id="repo" placeholder="madeitallback/sent-from-my-pumpfun-app" autocomplete="off" spellcheck="false">
-    <label for="branch">Branche</label>
-    <input id="branch" placeholder="main" autocomplete="off" spellcheck="false">
-    <label for="token">Token GitHub</label>
-    <input id="token" type="password" placeholder="github_pat_…" autocomplete="off" spellcheck="false">
+    <h2>2. La clé du site (une seule fois)</h2>
+    <p>C'est la valeur de <code>CALLOUTS_SECRET</code> dans Vercel. Elle empêche n'importe qui de remplir ton Feed.</p>
+    <label for="secret">Clé du site</label>
+    <input id="secret" type="password" autocomplete="off" spellcheck="false">
     <button type="button" id="save">Enregistrer</button>
     <button type="button" class="ghost" id="forget">Effacer la clé</button>
-    <p><small>La clé reste dans ce navigateur uniquement. Elle ne peut modifier que ce dépôt.</small></p>
+    <p><small>Elle reste dans ce navigateur uniquement.</small></p>
   </section>
 
   <section class="card">
     <h2>3. Ensuite, à chaque mise à jour</h2>
-    <p>Va sur la <a id="coinLink" href="#" target="_blank" rel="noopener" style="color:var(--green)">page du coin sur pump.fun</a> et clique sur <b>↻ Callouts $App</b> dans tes favoris. C'est tout : tu reviens ici, les callouts partent sur GitHub, et le site se met à jour tout seul en une minute environ.</p>
+    <p>Va sur <a href="https://pump.fun/?tab=top" target="_blank" rel="noopener">pump.fun</a> et clique sur <b>↻ Best callouts</b> dans tes favoris. Tu reviens ici, et le Feed est à jour en une minute environ.</p>
   </section>
 </main>
 
 <script>
 (() => {
-  const CA = "49nkLrXi8nCZBVKsShDNasEtPe4Vn1mx9Xbr3kTa8pTL";
-  const FILE = "data/callouts.json";
   const $ = (id) => document.getElementById(id);
   const store = {
     get: (k) => { try { return localStorage.getItem("sfm-upd-" + k) || ""; } catch { return ""; } },
     set: (k, v) => { try { v ? localStorage.setItem("sfm-upd-" + k, v) : localStorage.removeItem("sfm-upd-" + k); } catch {} }
   };
   const say = (msg, cls) => { const s = $("status"); s.hidden = false; s.className = "status " + (cls || ""); s.textContent = msg; };
-  $("coinLink").href = "https://pump.fun/coin/" + CA;
 
-  // ---------- the bookmarklet: runs on pump.fun, reads the callouts, brings them back here in the URL hash
+  // ---------- the bookmarklet: runs on pump.fun, reads the best callouts of the day and of the week
+  // (the Callouts > Best tab, every coin), then brings them back here in the URL hash.
+  // pump.fun only lets its own pages read this, so it has to run there, in your browser.
   // (no comments with // inside: it becomes a one-line javascript: link)
-  function grab(SITE, CA) {
-    if (!/(^|\.)pump\.fun$/.test(location.hostname)) { alert("Ouvre d'abord la page du coin sur pump.fun, puis reclique."); location.href = "https://pump.fun/coin/" + CA; return; }
+  function grab(SITE) {
+    if (!/(^|\.)pump\.fun$/.test(location.hostname)) { alert("Ouvre d'abord pump.fun, puis reclique."); location.href = "https://pump.fun/?tab=top"; return; }
+    const API = "https://frontend-api-v3.pump.fun";
     const clean = (s) => { s = (s || "").replace(/@\[([^\]]+)\]\([^)]*\)/g, "@$1").trim(); return s.length > 280 ? s.slice(0, 277).replace(/\s+\S*$/, "") + "…" : s; };
-    fetch("https://frontend-api-v3.pump.fun/mint-positions/" + CA + "?sortBy=RANKED&withThesis=true&pageSize=50&platform=WEB")
-      .then((r) => { if (!r.ok) throw new Error("pump.fun " + r.status); return r.json(); })
-      .then((j) => {
-        const callouts = (j.positions || []).filter((p) => p.callout && p.callout.thesis && !p.lowQuality).slice(0, 24).map((p, i) => {
-          const c = p.callout, top = (c.updates || []).filter((u) => u.content).sort((a, b) => b.likeCount - a.likeCount)[0];
-          return { rank: i + 1, id: c.calloutId, user: p.userName, x: p.xUsername || null, avatar: p.profileImage || null, wallet: p.walletAddress,
-            thesis: clean(c.thesis), update: top ? clean(top.content) : null, at: c.calloutTimestamp, mcap: Math.round(c.calledOutAtMcap || 0),
-            peak: +(c.maxMultiplier || 0).toFixed(1), likes: c.likes || 0, views: c.viewCount || 0, replies: c.replyCount || 0 };
-        });
-        if (!callouts.length) throw new Error("aucun callout trouvé");
-        location.href = SITE + "/update#" + encodeURIComponent(JSON.stringify({ updated: new Date().toISOString(), mint: CA, callouts }));
+    const get = (path) => fetch(API + path).then((r) => { if (!r.ok) throw new Error("pump.fun " + r.status); return r.json(); });
+    const pick = (list) => (list.entries || []).filter((e) => e.callout && e.callout.thesis).slice(0, 25);
+    Promise.all([get("/pnl-leaderboard/positions?period=daily"), get("/pnl-leaderboard/positions?period=weekly")])
+      .then(([day, week]) => {
+        const D = pick(day), W = pick(week), coins = {};
+        const mints = [...new Set(D.concat(W).map((e) => e.coinMint))];
+        return Promise.all(mints.map((m) => get("/coins-v3/" + m)
+          .then((c) => { coins[m] = { mint: m, name: (c.name || "").slice(0, 40), symbol: (c.symbol || "").slice(0, 16), image: c.image_uri || null, mcap: Math.round(c.usd_market_cap || c.market_cap || 0) }; })
+          .catch(() => { coins[m] = { mint: m, name: "", symbol: "", image: null, mcap: 0 }; })))
+          .then(() => {
+            const shape = (e, i) => {
+              const c = e.callout, top = (c.updates || []).filter((u) => u.content).sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0))[0];
+              return { rank: i + 1, id: c.calloutId, user: e.username || e.walletAddress.slice(0, 6), x: e.xUsername || null, avatar: e.profileImage || null, wallet: e.walletAddress,
+                thesis: clean(c.thesis), update: top ? clean(top.content) : null, at: c.calloutTimestamp, mcap: Math.round(c.calledOutAtMcap || 0),
+                peak: +(c.maxMultiplier || c.multiple || 0).toFixed(1), pnl: Math.round(e.pnlUsd || 0),
+                likes: c.likes || 0, views: c.viewCount || 0, replies: c.replyCount || 0, coin: coins[e.coinMint] };
+            };
+            if (!D.length && !W.length) throw new Error("aucun callout trouvé");
+            location.href = SITE + "/update#" + encodeURIComponent(JSON.stringify({ updated: new Date().toISOString(), source: "pump.fun best callouts", day: D.map(shape), week: W.map(shape) }));
+          });
       })
-      .catch((e) => alert("Impossible de lire les callouts : " + e.message + ". Recharge la page pump.fun et reclique."));
+      .catch((e) => alert("Impossible de lire les callouts : " + e.message + ". Recharge pump.fun et reclique."));
   }
-  $("bookmarklet").href = "javascript:(" + encodeURIComponent(grab.toString()) + ")(" + encodeURIComponent(JSON.stringify(location.origin)) + "," + encodeURIComponent(JSON.stringify(CA)) + ")";
-  $("bookmarklet").addEventListener("click", (e) => { e.preventDefault(); say("Ne clique pas ici : glisse ce bouton dans ta barre de favoris, puis utilise-le sur la page pump.fun.", "err"); });
+  $("bookmarklet").href = "javascript:(" + encodeURIComponent(grab.toString()) + ")(" + encodeURIComponent(JSON.stringify(location.origin)) + ")";
+  $("bookmarklet").addEventListener("click", (e) => { e.preventDefault(); say("Ne clique pas ici : glisse ce bouton dans ta barre de favoris, puis utilise-le sur pump.fun.", "err"); });
 
-  // ---------- settings
-  $("repo").value = store.get("repo") || "madeitallback/sent-from-my-pumpfun-app";
-  $("branch").value = store.get("branch") || "main";
-  $("token").value = store.get("token");
+  // ---------- the site key
+  $("secret").value = store.get("secret");
   $("save").addEventListener("click", () => {
-    store.set("repo", $("repo").value.trim()); store.set("branch", $("branch").value.trim() || "main"); store.set("token", $("token").value.trim());
-    say(store.get("token") ? "Enregistré. Tu peux utiliser le bouton sur pump.fun." : "Il manque le token GitHub.", store.get("token") ? "ok" : "err");
+    store.set("secret", $("secret").value.trim());
+    say(store.get("secret") ? "Enregistré. Tu peux utiliser le bouton sur pump.fun." : "Il manque la clé.", store.get("secret") ? "ok" : "err");
   });
-  $("forget").addEventListener("click", () => { store.set("token", ""); $("token").value = ""; say("Clé effacée de ce navigateur.", "ok"); });
+  $("forget").addEventListener("click", () => { store.set("secret", ""); $("secret").value = ""; say("Clé effacée de ce navigateur.", "ok"); });
 
-  // ---------- incoming callouts: check them, then commit data/callouts.json to GitHub (Vercel redeploys on its own)
-  const isUrl = (u) => u == null || /^https:\/\/[^\s"'<>]+$/.test(u);
-  function valid(d) {
-    if (!d || d.mint !== CA || !Array.isArray(d.callouts) || !d.callouts.length || d.callouts.length > 50) return false;
-    return d.callouts.every((c) => c && typeof c.id === "string" && typeof c.user === "string" && typeof c.thesis === "string" &&
-      c.thesis.length <= 300 && (c.update == null || (typeof c.update === "string" && c.update.length <= 300)) &&
-      isUrl(c.avatar) && [c.rank, c.mcap, c.peak, c.likes].every((n) => typeof n === "number" && isFinite(n)));
-  }
-  const b64 = (s) => { const bytes = new TextEncoder().encode(s); let bin = ""; bytes.forEach((b) => { bin += String.fromCharCode(b); }); return btoa(bin); };
-  async function publish(d, { repo, branch, token }, fetchFn = fetch) {
-    const api = `https://api.github.com/repos/${repo}/contents/${FILE}`;
-    const h = { Authorization: "Bearer " + token, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" };
-    const cur = await fetchFn(`${api}?ref=${encodeURIComponent(branch)}`, { headers: h });
-    if (cur.status === 401 || cur.status === 403) throw new Error("le token GitHub est refusé (vérifie qu'il a accès au dépôt avec Contents en Read and write)");
-    if (!cur.ok && cur.status !== 404) throw new Error("GitHub " + cur.status);
-    const sha = cur.ok ? (await cur.json()).sha : undefined;
-    const body = { message: `Callouts: ${d.callouts.length} from pump.fun`, content: b64(JSON.stringify(d, null, 1) + "\n"), branch };
-    if (sha) body.sha = sha;
-    const put = await fetchFn(api, { method: "PUT", headers: { ...h, "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    if (!put.ok) throw new Error("GitHub " + put.status + " : " + ((await put.json().catch(() => ({}))).message || ""));
-    return (await put.json()).commit;
-  }
-  window.__sfmUpdate = { valid, publish }; // used by the local tests only
-
+  // ---------- incoming callouts: sent to the site (api/callouts.js checks them and stores them in Supabase)
   async function incoming() {
     if (location.hash.length < 2) return;
     let d;
     try { d = JSON.parse(decodeURIComponent(location.hash.slice(1))); } catch { d = null; }
     history.replaceState(null, "", location.pathname);
-    if (!valid(d)) { say("Les données reçues ne ressemblent pas à des callouts $App. Rien n'a été envoyé.", "err"); return; }
-    const cfg = { repo: store.get("repo"), branch: store.get("branch") || "main", token: store.get("token") };
-    if (!cfg.repo || !cfg.token) { say("Callouts reçus, mais la clé GitHub n'est pas enregistrée. Remplis l'étape 2 ci-dessous, puis reclique sur le bouton depuis pump.fun.", "err"); return; }
-    const top = d.callouts.slice(0, 3).map((c) => `#${c.rank} ${c.user}`).join(", ");
-    say(`Envoi de ${d.callouts.length} callouts sur GitHub…`);
+    if (!d || !Array.isArray(d.day) || !Array.isArray(d.week)) { say("Les données reçues ne ressemblent pas à des callouts. Rien n'a été envoyé.", "err"); return; }
+    const secret = store.get("secret");
+    if (!secret) { say("Callouts reçus, mais la clé du site n'est pas enregistrée. Remplis l'étape 2, puis reclique sur le bouton depuis pump.fun.", "err"); return; }
+    say(`Envoi de ${d.day.length + d.week.length} callouts…`);
     try {
-      await publish(d, cfg);
-      say(`C'est parti ✓ ${d.callouts.length} callouts envoyés (${top}…).\nLe site se met à jour tout seul d'ici une minute environ.`, "ok");
+      const r = await fetch("/api/callouts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ secret, data: d }) });
+      const j = await r.json().catch(() => ({}));
+      if (r.status === 401) throw new Error("la clé du site est refusée");
+      if (!r.ok) throw new Error(j.error || "erreur " + r.status);
+      const top = (d.day.slice(0, 3).map((c) => c.user).join(", ")) || "—";
+      say(`C'est fait ✓ ${d.day.length} callouts du jour (${top}…) et ${d.week.length} de la semaine.\nLe Feed se met à jour d'ici une minute.`, "ok");
     } catch (e) {
       say("Échec de l'envoi : " + e.message, "err");
     }

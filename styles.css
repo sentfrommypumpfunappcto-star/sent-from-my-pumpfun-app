@@ -571,6 +571,33 @@ textarea { resize: vertical; min-height: 80px; }
 .feed-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 12px; margin: 6px 0 2px; }
 .feed-head h3 { margin: 0; font-size: 17px; font-weight: 700; letter-spacing: -.01em; }
 .feed-head small { color: var(--dim); font-size: 12px; white-space: nowrap; }
+/* Today: the top 5 callouts of the day, in a strip above the feed */
+.today { margin: 10px 0 4px; }
+.today-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+.today-head b { font-size: 15px; font-weight: 700; }
+.today-head b::before { content: ""; display: inline-block; width: 7px; height: 7px; margin: 0 7px 2px 0; border-radius: 50%; background: var(--neon); box-shadow: 0 0 8px var(--neon); }
+.today-head small { color: var(--dim); font-size: 12.5px; }
+.today-row { display: flex; gap: 10px; overflow-x: auto; margin: 0 -16px; padding: 0 16px 6px; scroll-snap-type: x mandatory; scroll-padding-inline: 16px; scrollbar-width: none; }
+.today-row::-webkit-scrollbar { display: none; }
+.tcard { flex: none; width: 210px; display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); color: inherit; scroll-snap-align: start; transition: border-color .2s; }
+.tcard:hover { border-color: var(--line-2); }
+.tcard-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.tcard-av { flex: none; width: 28px; height: 28px; border-radius: 50%; overflow: hidden; background: var(--surface-2); }
+.tcard-av img, .tcard-av .fi-ident { width: 100%; height: 100%; object-fit: cover; }
+.tcard-top b { font-size: 13.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tcard-top i { margin-left: auto; font: 700 11.5px/1 var(--mono); font-style: normal; color: var(--green); }
+.tcard p { margin: 0; font-size: 13.5px; line-height: 1.35; color: var(--text); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; min-height: 3.9em; }
+.tcard-coin { display: flex; align-items: center; gap: 6px; margin-top: auto; font-size: 12.5px; color: var(--muted); }
+.tcard-coin img, .tcard-coin .fi-ident { width: 20px; height: 20px; border-radius: 6px; object-fit: cover; flex: none; }
+.tcard-coin span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tcard-coin b { margin-left: auto; font-weight: 700; }
+/* the coin a callout is about, like pump.fun's card */
+.co-coin { display: flex; align-items: center; gap: 10px; margin-top: 8px; padding: 9px 11px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); color: inherit; }
+.co-coin img, .co-coin .fi-ident { width: 34px; height: 34px; border-radius: 8px; object-fit: cover; flex: none; }
+.co-coin span { display: flex; flex-direction: column; min-width: 0; }
+.co-coin span b { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.co-coin span small { color: var(--dim); font-size: 12px; }
+.co-coin em { margin-left: auto; font-style: normal; font-weight: 700; font-size: 14px; white-space: nowrap; }
 .hill-sub { margin: -4px 0 4px; color: var(--dim); font-size: 13.5px; }
 .feed-tabs { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; margin: 4px 0 2px; }
 .feed-tabs .mini button { white-space: nowrap; }

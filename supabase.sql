@@ -16,3 +16,12 @@ create index if not exists posts_author on posts (author_id);
 
 -- Only the server (service_role key) reads and writes. Nothing is open to the public.
 alter table posts enable row level security;
+
+-- Small key/value store. Holds the best pump.fun callouts of the day and of the week for the Feed
+-- (key "best-callouts", written by api/callouts.js when the "↻ Best callouts" bookmark is used).
+create table if not exists kv (
+  key        text primary key,
+  data       jsonb not null,
+  updated_at timestamptz not null default now()
+);
+alter table kv enable row level security;

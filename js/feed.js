@@ -73,45 +73,64 @@
       <span class="ev-kind ms">Milestone</span>
     </div>`;
 
-  // ---------- Best callouts: the real $App callouts from pump.fun, each one turned into a meme.
-  // Live through api/callouts.js; data/callouts.json is the fallback (tools/export-callouts.js refreshes it).
-  let CALLOUTS = [], calloutsAt = 0, calloutsTried = false;
+  // ---------- Best callouts: the best pump.fun callouts (every coin), like pump.fun's Callouts > Best tab.
+  // TODAY: the top 5 of the last 24h, in a strip. CALLOUTS: the best of the week below, each one turned into a meme.
+  // From api/callouts.js (refreshed with the "↻ Best callouts" bookmark, see /update); data/callouts.json is the fallback.
+  let CALLOUTS = [], TODAY = [], calloutsAt = 0, calloutsTried = false;
   // only a trailing signature goes: "sent from my pumpfun app at 100M?!!" keeps its joke
   const SIGRX = /\s*[-–—]?\s*sen[dt]?\s+(?:from|to)\s+(?:my|the|his)\s+pump(?:[.\s]?fun)?(?:\s+(?:super\s+)?(?:app|wallet))?[\s.!]*$/i;
   const strip = (s) => (s || "").trim().replace(SIGRX, "").replace(/\s+/g, " ").trim();
   const cap = (s, n) => (s.length > n ? s.slice(0, n - 1).replace(/\s+\S*$/, "") + "…" : s);
   const xNum = (n) => (n >= 10 ? Math.round(n) : n.toFixed(1)) + "x";
-  const calloutLink = (c) => `https://pump.fun/coin/${S.CA}?highlight_callout=${encodeURIComponent(c.id)}`;
+  const coinOf = (c) => c.coin || { mint: S.CA, symbol: "App", name: "Sent from my Pumpfun App", image: "assets/logo.png", mcap: 0 };
+  const calloutLink = (c) => `https://pump.fun/coin/${coinOf(c).mint}?highlight_callout=${encodeURIComponent(c.id)}`;
+  const tkr = (c) => "$" + (coinOf(c).symbol || "coin");
+  const profit = (c) => (c.pnl > 0 ? "+" + usd(c.pnl) : null);
   // the signature is already drawn by every template, so the meme says what the callout says besides it
   function calloutMeme(c) {
     let line = strip(c.thesis);
     if (line.length < 8) line = strip(c.update);
-    if (line.length < 8) line = `Called $App at ${usd(c.mcap)}. Peaked at ${xNum(c.peak)}.`;
+    if (line.length < 8) line = `Called ${tkr(c)} at ${usd(c.mcap)}.${profit(c) ? ` Up ${profit(c)}.` : ""}`;
     line = cap(line, 150);
     const name = c.user, handle = c.x || c.user;
     const T = [
       { tpl: "tweet", theme: "dark", fmt: "square", data: { name, handle, text: line } },
-      { tpl: "receipt", theme: "light", fmt: "portrait", data: { store: "CALLOUT RECEIPT", items: `1x $App - called at ${usd(c.mcap)}\n1x conviction - included\n1x sleep - skipped`, total: xNum(c.peak) + " peak" } },
+      { tpl: "receipt", theme: "light", fmt: "portrait", data: { store: "CALLOUT RECEIPT", items: `1x ${tkr(c)} - called at ${usd(c.mcap)}\n1x conviction - included\n1x sleep - skipped`, total: profit(c) || xNum(c.peak) + " peak" } },
       { tpl: "discord", theme: "dark", fmt: "square", data: { channel: "callouts", user: name, msg: line } },
-      { tpl: "notif", theme: "dark", fmt: "portrait", data: { time: "3:07", msg: cap(`${name} called $App at ${usd(c.mcap)}. ${line}`, 120) } },
+      { tpl: "notif", theme: "dark", fmt: "portrait", data: { time: "3:07", msg: cap(`${name} called ${tkr(c)} at ${usd(c.mcap)}. ${line}`, 120) } },
       { tpl: "review", theme: "light", fmt: "square", data: { title: `Called at ${usd(c.mcap)}`, stars: "5", body: line, author: name } },
       { tpl: "text", theme: "dark", fmt: "portrait", data: { contact: name, them: "what are you buying?", me: line } }
     ];
     return T[(c.rank - 1) % T.length];
   }
-  const calloutHTML = (c, m) => `
+  const coinImg = (c) => { const k = coinOf(c); return k.image ? `<img src="${esc(k.image)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ident(k.mint); };
+  const coinChip = (c) => `<a class="co-coin" href="https://pump.fun/coin/${encodeURIComponent(coinOf(c).mint)}" target="_blank" rel="noopener">${coinImg(c)}<span><b>${esc(coinOf(c).name || tkr(c))}</b><small>${esc(tkr(c))}${coinOf(c).mcap ? ` · ${usd(coinOf(c).mcap)} MC` : ""}</small></span>${profit(c) ? `<em class="up">${profit(c)}</em>` : ""}</a>`;
+  // the top 5 of the day, in a strip above the feed
+  const todayHTML = () => !TODAY.length ? "" : `
+    <section class="today" aria-label="Best callouts today">
+      <div class="today-head"><b>Today</b><small>Top ${TODAY.length} callouts on pump.fun</small></div>
+      <div class="today-row">${TODAY.map((c, i) => `
+        <a class="tcard" href="${calloutLink(c)}" target="_blank" rel="noopener">
+          <span class="tcard-top"><span class="tcard-av">${c.avatar ? `<img src="${esc(c.avatar)}" alt="" loading="lazy" referrerpolicy="no-referrer" data-w="${esc(c.wallet)}">` : ident(c.wallet)}</span><b>${esc(c.user)}</b><i>#${i + 1}</i></span>
+          <p>${esc(cap(c.thesis.replace(/\s+/g, " "), 110))}</p>
+          <span class="tcard-coin">${coinImg(c)}<span>${esc(tkr(c))}</span>${profit(c) ? `<b class="up">${profit(c)}</b>` : ""}</span>
+        </a>`).join("")}
+      </div>
+    </section>`;
+  const calloutHTML = (c, m, i) => `
     <article class="fi co">
       <span class="fi-av co">${c.avatar ? `<img src="${esc(c.avatar)}" alt="" loading="lazy" referrerpolicy="no-referrer" data-w="${esc(c.wallet)}">` : ident(c.wallet)}</span>
       <div>
-        <div class="fi-top"><b>${esc(c.user)}</b>${c.x ? `<a href="https://x.com/${encodeURIComponent(c.x)}" target="_blank" rel="noopener">@${esc(c.x)}</a>` : `<span>${short(c.wallet)}</span>`}<span class="co-rank" title="Rank on pump.fun">#${c.rank}</span></div>
+        <div class="fi-top"><b>${esc(c.user)}</b>${c.x ? `<a href="https://x.com/${encodeURIComponent(c.x)}" target="_blank" rel="noopener">@${esc(c.x)}</a>` : `<span>${short(c.wallet)}</span>`}<span class="co-rank" title="Rank this week on pump.fun">#${c.rank}</span></div>
         <p>${esc(c.thesis)}</p>
         <span class="fi-media" style="--ar:${AR[c.meme.fmt]}"><img data-meme="${m}" src="${PIXEL}" alt="Meme made from ${esc(c.user)}'s callout"></span>
+        ${c.coin ? coinChip(c) : ""}
         <div class="co-call"><span>Called at <b>${usd(c.mcap)}</b></span><span>Peak <b class="up">${xNum(c.peak)}</b></span><span>${ago(Date.parse(c.at))} on pump.fun</span></div>
         <div class="fi-acts">
           <a href="${calloutLink(c)}" target="_blank" rel="noopener" aria-label="${c.likes} likes, open on pump.fun">${ICON.like}<span>${c.likes}</span></a>
           <a href="${calloutLink(c)}" target="_blank" rel="noopener" aria-label="Open the callout on pump.fun">${ICON.open}<span>pump.fun</span></a>
-          <button type="button" aria-label="Copy the link" data-copy-co="${c.rank - 1}">${ICON.share}</button>
-          <button type="button" class="remix" data-remix-co="${c.rank - 1}">Remix</button>
+          <button type="button" aria-label="Copy the link" data-copy-co="${i}">${ICON.share}</button>
+          <button type="button" class="remix" data-remix-co="${i}">Remix</button>
         </div>
       </div>
     </article>`;
@@ -184,17 +203,18 @@
     const media = (m) => MEDIA.push(m) - 1;
     let html = "";
     $("calloutsNote").textContent = calloutsAt ? `Best callouts · ${ago(calloutsAt)}` : "";
-    // the feed is the best $App callouts from pump.fun, each one turned into a meme by the Studio
-    if (CALLOUTS.length) {
-      CALLOUTS.forEach((c) => { html += calloutHTML(c, media(c.meme)); });
-      html += `<p class="feed-end">Ranked by pump.fun. Post yours from the app.</p>`;
+    // the top 5 of the day, then the best of the week, each one turned into a meme by the Studio
+    if (CALLOUTS.length || TODAY.length) {
+      html += todayHTML();
+      CALLOUTS.forEach((c, i) => { html += calloutHTML(c, media(c.meme), i); });
+      html += `<p class="feed-end">The best callouts of the week, ranked by pump.fun. Post yours from the app.</p>`;
     } else if (!calloutsTried) {
       html = `<p class="feed-end"><span class="spinner"></span></p>`;
     } else {
       // a callout before every second post, the latest real trades after every second post
       let ti = 0, ci = 0;
       POSTS.forEach((p, i) => {
-        if (i % 2 === 0 && CALLOUTS[ci]) { const c = CALLOUTS[ci++]; html += calloutHTML(c, media(c.meme)); }
+        if (i % 2 === 0 && CALLOUTS[ci]) { const c = CALLOUTS[ci]; html += calloutHTML(c, media(c.meme), ci++); }
         html += postHTML(p, i, p.meme ? media(p.meme) : -1);
         if (i % 2 === 1 && trades[ti]) html += tradeHTML(trades[ti++]);
       });
@@ -204,39 +224,25 @@
     loadMedia();
   }
 
-  // Where the callouts come from, first that answers wins, refreshed every 5 minutes:
-  //   1. pump.fun straight from the visitor's browser: works as soon as pump.fun allows this site's domain (CORS)
-  //   2. api/callouts.js on our server: works once pump.fun lets our server through (key or allowlist)
-  //   3. data/callouts.json, the saved copy
+  // Where the callouts come from, refreshed every 5 minutes:
+  //   1. api/callouts.js: the last ones sent with the "↻ Best callouts" bookmark (pump.fun blocks servers and other sites)
+  //   2. data/callouts.json, the saved copy (old shape: { callouts: [...] } of $App only, shown as the week)
   const getJSON = (u) => fetch(u).then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); });
-  const PUMP = `https://frontend-api-v3.pump.fun/mint-positions/${S.CA}?sortBy=RANKED&withThesis=true&pageSize=50&platform=WEB`;
-  const cleanCo = (s) => { s = (s || "").replace(/@\[([^\]]+)\]\([^)]*\)/g, "@$1").trim(); return s.length > 280 ? s.slice(0, 277).replace(/\s+\S*$/, "") + "…" : s; };
-  const shapeCo = (positions) => positions.filter((p) => p.callout && p.callout.thesis && !p.lowQuality).slice(0, 24).map((p, i) => {
-    const c = p.callout, top = (c.updates || []).filter((u) => u.content).sort((a, b) => b.likeCount - a.likeCount)[0];
-    return { rank: i + 1, id: c.calloutId, user: p.userName, x: p.xUsername || null, avatar: p.profileImage || null, wallet: p.walletAddress,
-      thesis: cleanCo(c.thesis), update: top ? cleanCo(top.content) : null, at: c.calloutTimestamp, mcap: Math.round(c.calledOutAtMcap || 0),
-      peak: +(c.maxMultiplier || 0).toFixed(1), likes: c.likes || 0, views: c.viewCount || 0, replies: c.replyCount || 0 };
-  });
-  let calloutsSig = "", directOk = true;
+  let calloutsSig = "";
   async function loadCallouts() {
     let d;
-    try {
-      if (!directOk) throw 0;
-      d = { updated: new Date().toISOString(), callouts: shapeCo((await getJSON(PUMP)).positions || []) };
-      if (!d.callouts.length) throw 0;
-    } catch {
-      directOk = false; // blocked once: don't retry from every visitor every 5 minutes, the server route takes over
-      try { d = await getJSON("/api/callouts"); } catch { if (CALLOUTS.length) return; try { d = await getJSON("data/callouts.json"); } catch { return; } }
-    }
-    const list = d.callouts || [];
-    const sig = list.map((c) => c.id + c.likes).join();
-    if (!list.length || sig === calloutsSig) return;
+    try { d = await getJSON("/api/callouts"); } catch { if (CALLOUTS.length) return; try { d = await getJSON("data/callouts.json"); } catch { return; } }
+    const day = (d.day || []).slice(0, 5), shown = new Set(day.map((c) => c.id));
+    const week = (d.week || d.callouts || []).filter((c) => !shown.has(c.id));
+    const sig = day.concat(week).map((c) => c.id + c.likes).join();
+    if (!sig || sig === calloutsSig) return;
     calloutsSig = sig;
-    CALLOUTS = list.map((c) => ({ ...c, meme: calloutMeme(c) }));
+    TODAY = day;
+    CALLOUTS = week.map((c) => ({ ...c, meme: calloutMeme(c) }));
     calloutsAt = Date.parse(d.updated) || 0;
     render();
   }
-  loadCallouts().finally(() => { calloutsTried = true; if (!CALLOUTS.length) render(); });
+  loadCallouts().finally(() => { calloutsTried = true; if (!CALLOUTS.length && !TODAY.length) render(); });
   setInterval(() => { if (!document.hidden) loadCallouts(); }, 300000);
   renderBoard();
   loadBoard("all");
@@ -269,10 +275,10 @@
   S.on("trade", (t) => {
     trades.unshift(t);
     // live trades only show in the fallback timeline, when no callout could be loaded
-    const first = !CALLOUTS.length && feed.querySelector(".fi");
+    const first = !CALLOUTS.length && !TODAY.length && feed.querySelector(".fi");
     if (first) first.insertAdjacentHTML("beforebegin", tradeHTML(t, true));
   });
-  S.on("milestone", (label) => { const first = !CALLOUTS.length && feed.querySelector(".fi"); if (first) first.insertAdjacentHTML("beforebegin", msHTML(label)); });
+  S.on("milestone", (label) => { const first = !CALLOUTS.length && !TODAY.length && feed.querySelector(".fi"); if (first) first.insertAdjacentHTML("beforebegin", msHTML(label)); });
   S.on("memes:ready", () => { loadMedia(); buildStories(); });
   setInterval(() => $$("#feed [data-ts]").forEach((el) => { el.textContent = ago(+el.dataset.ts); }), 30000);
 

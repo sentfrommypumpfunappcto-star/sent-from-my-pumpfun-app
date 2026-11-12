@@ -43,20 +43,11 @@ Puis **Deployments → … → Redeploy**. C'est tout.
 
 ## 2. Mettre à jour les callouts : un clic
 
-### Une seule fois (~3 min)
-1. Pour que les mises à jour se publient toutes seules, le site doit être relié au dépôt GitHub dans Vercel (**Add New → Project → Import** le dépôt). C'est le cas si tu l'as importé depuis GitHub.
-2. Ouvre la page **`/update`** de ton site (ex. `https://ton-site.com/update`) :
-   - **Le bouton :** affiche ta barre de favoris (`Ctrl+Maj+B`, ou `Cmd+Maj+B` sur Mac) et **glisse le bouton « ↻ Callouts $App »** dedans.
-   - **La clé GitHub :** clique sur le lien de la page, qui ouvre GitHub avec le formulaire déjà rempli. Choisis seulement le dépôt du site à « Repository access », clique sur **Generate token**, copie le code `github_pat_…`, colle-le sur la page `/update` et clique sur **Enregistrer**.
+Le Feed affiche les meilleurs callouts de **tout pump.fun** (comme l'onglet Callouts > Meilleurs) : le top 5 du jour en bandeau, puis le best of de la semaine en memes. pump.fun ne laisse lire ces données qu'à ses propres pages, donc la mise à jour part de ton navigateur.
 
-   Cette clé ne peut modifier que ce dépôt et reste dans ton navigateur.
+### Une seule fois
+1. Ouvre la page **`/update`** du site et **glisse le bouton « ↻ Best callouts »** dans ta barre de favoris (`Ctrl+Maj+B` pour l'afficher).
+2. Sur la même page, colle la **clé du site** (variable `CALLOUTS_SECRET` dans Vercel) et clique sur **Enregistrer**. Elle reste dans ce navigateur.
 
 ### Ensuite, à chaque fois
-Va sur la page du coin sur pump.fun et clique sur **↻ Callouts $App** dans tes favoris. Les callouts partent sur GitHub et le site se met à jour tout seul en une minute environ.
-
-> Le bouton marche sur Chrome, Brave et Edge. Utilise toujours le même navigateur : la clé est enregistrée dans celui-ci.
-
-### Méthode de secours (si le bouton ne marche pas)
-1. Ouvre https://pump.fun/coin/49nkLrXi8nCZBVKsShDNasEtPe4Vn1mx9Xbr3kTa8pTL
-2. Appuie sur **F12**, ouvre l'onglet **Console**, colle le contenu de `tools/export-callouts.js` et appuie sur **Entrée**.
-3. Un fichier `callouts.json` se télécharge : sur GitHub, ouvre le dossier `data`, puis **Add file → Upload files**, dépose le fichier et valide. Le site se met à jour tout seul.
+Va sur https://pump.fun/?tab=top et clique sur **↻ Best callouts** dans tes favoris. Tu arrives sur `/update`, qui confirme l'envoi, et le Feed est à jour en une minute environ. Pas de GitHub, pas de redéploiement : les callouts sont rangés dans Supabase (table `kv`).
