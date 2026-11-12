@@ -3,8 +3,8 @@
 // so it must run at least once a week; daily is the plan.
 const { env, configured, db, norm } = require("./_lib");
 
-// X search ignores case, so App / app / APP all match
-const QUERY = '("sent from my pumpfun app" OR "sent from my pump.fun app" OR "sent from my pump fun app") -is:retweet';
+// X search ignores case and punctuation, so App / app / $App / @Pumpfun all match
+const QUERY = '("sent from my pumpfun app" OR "sent from my pump.fun app" OR "sent from my pump fun app" OR "sent from my pumpfunapp") -is:retweet';
 const MAX_PAGES = 5; // 500 posts per run at most: keeps the bill predictable
 
 module.exports = async (req, res) => {
