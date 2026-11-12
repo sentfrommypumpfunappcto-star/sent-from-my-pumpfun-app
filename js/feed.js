@@ -103,7 +103,8 @@
     ];
     return T[(c.rank - 1) % T.length];
   }
-  const coinImg = (c) => { const k = coinOf(c); return k.image ? `<img src="${esc(k.image)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ident(k.mint); };
+  // coin images through pump.fun's own image CDN: many image_uri point to ipfs.io, which often fails to load
+  const coinImg = (c) => { const k = coinOf(c), src = c.coin ? `https://images.pump.fun/coin-image/${encodeURIComponent(k.mint)}?variant=86x86` : k.image; return src ? `<img src="${esc(src)}" alt="" loading="lazy" referrerpolicy="no-referrer" data-w="${esc(k.mint)}">` : ident(k.mint); };
   const coinChip = (c) => `<a class="co-coin" href="https://pump.fun/coin/${encodeURIComponent(coinOf(c).mint)}" target="_blank" rel="noopener">${coinImg(c)}<span><b>${esc(coinOf(c).name || tkr(c))}</b><small>${esc(tkr(c))}${coinOf(c).mcap ? ` · ${usd(coinOf(c).mcap)} MC` : ""}</small></span>${profit(c) ? `<em class="up">${profit(c)}</em>` : ""}</a>`;
   // the top 5 of the day, in a strip above the feed
   const todayHTML = () => !TODAY.length ? "" : `
